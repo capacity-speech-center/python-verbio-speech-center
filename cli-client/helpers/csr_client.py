@@ -32,6 +32,7 @@ class CSRClient:
         self._inactivity_timer = None
         self._inactivity_timer_timeout = options.inactivity_timeout
         self._asr_version = options.asr_version
+        self._provider = options.provider
         self._formatting = options.formatting
         self._diarization = options.diarization
         self._hide_partial_results = options.hide_partial_results
@@ -97,6 +98,7 @@ class CSRClient:
                 topic=self._topic,
                 grammar=self._grammar,
                 asr_version=self._asr_version,
+                provider=self._provider,
                 wav_audio=self._resources.audio,
                 language=self._language,
                 sample_rate=self._resources.sample_rate,
@@ -147,7 +149,8 @@ class CSRClient:
 
     def __generate_messages(self,
                             wav_audio: bytes,
-                            asr_version: str,
+                            asr_version: str = None,
+                            provider: str = None,
                             topic: str = "",
                             grammar: str = "",
                             language: str = "",
@@ -158,22 +161,26 @@ class CSRClient:
                             word_boosting: list = None):
 
         resource = self.__generate_recognition_resource(topic, grammar)
-        asr_versions = {"V1": 0, "V2": 1}
-        selected_asr_version = asr_versions[asr_version]
         boosted_words = word_boosting or []
 
-        recognition_config = recognition_streaming_request_pb2.RecognitionConfig(
-                        parameters=recognition_streaming_request_pb2.RecognitionParameters(
-                            language=language,
-                            pcm=recognition_streaming_request_pb2.PCM(sample_rate_hz=sample_rate),
-                            enable_formatting=formatting,
-                            enable_diarization=diarization,
-                            word_boosting=boosted_words
-                        ),
-                        resource=resource,
-                        label=[label],
-                        version=selected_asr_version
-                    )
+        config_kwargs = dict(
+            parameters=recognition_streaming_request_pb2.RecognitionParameters(
+                language=language,
+                pcm=recognition_streaming_request_pb2.PCM(sample_rate_hz=sample_rate),
+                enable_formatting=formatting,
+                enable_diarization=diarization,
+                word_boosting=boosted_words
+            ),
+            resource=resource,
+            label=[label],
+        )
+        if asr_version is not None:
+            asr_versions = {"V1": 0, "V2": 1}
+            config_kwargs["version"] = asr_versions[asr_version]
+        if provider is not None:
+            config_kwargs["provider"] = provider
+
+        recognition_config = recognition_streaming_request_pb2.RecognitionConfig(**config_kwargs)
 
         self._messages = [
             ("config",

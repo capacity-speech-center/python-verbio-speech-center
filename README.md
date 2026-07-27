@@ -81,7 +81,7 @@ Speech recognition CLI will retrieve an audio file stored locally and send it th
 
 ```shell
 cd cli-client/
-python3 recognizer_stream.py --audio-file file.wav --topic GENERIC --language en-US --host us.speechcenter.verbio.com --token token.file --asr-version V1 --label project1
+python3 recognizer_stream.py --audio-file file.wav --topic GENERIC --language en-US --host us.speechcenter.verbio.com --token token.file --provider verbio --label project1
 ```
 
 You can use the `--help`command for more options.
@@ -197,15 +197,21 @@ This option will enable formatting on the speech transcription. Please check the
 
 By default, incomplete partial results are shown as soon as they arrive. They contain speech transcription segments which are subject to change. This option makes partial results not show anymore.
 
-#### Speech-To-Text engine version
+#### Speech-To-Text provider
 
 ```
--A, --asr-version arg
+--provider arg
 ```
 
-This will select the Speech-To-Text engine version the speech center will use for transcriptions.
+This selects the speech recognition provider the speech center will use for transcriptions. Allowed values are `verbio`, `deepgram` and `capacity`. When unset, the gateway selects a provider implicitly based on the resource type.
 
-> Please follow Verbio's sales department recommendation on which version to use.
+#### Speech-To-Text engine version (deprecated)
+
+```
+--asr-version arg
+```
+
+> **Deprecated:** engine selection is now done through `--provider`. The `--asr-version` flag (`V1`/`V2`) is still accepted for backwards compatibility but should no longer be used.
 
 #### Sample rate
 
@@ -442,7 +448,7 @@ You must also specify a token file, where the token will be stored and updated i
 **Example**
 ```shell
 python3 recognizer_stream.py --client-id="your-client-id" --client-secret="your-client-secret"
- --audio-file file.wav --topic GENERIC --language en-US --host us.speechcenter.verbio.com --token token.file --asr-version V1 --label project1
+ --audio-file file.wav --topic GENERIC --language en-US --host us.speechcenter.verbio.com --token token.file --provider verbio --label project1
 
 ```
 

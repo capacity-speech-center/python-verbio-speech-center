@@ -21,7 +21,8 @@ VERBIO_URL ?= us.speechcenter.verbio.com
 CLIENT_ID ?= $(shell cat $(VERBIO_CREDENTIALS) | jq .client_id -r)
 CLIENT_SECRET ?= $(shell cat $(VERBIO_CREDENTIALS) | jq .client_secret -r)
 TOPIC ?= GENERIC
-ASR_VERSION ?= V2
+ASR_VERSION ?=
+PROVIDER ?=
 TTS_AUDIO_FILE ?= tts_$(shell date +%Y-%m-%d_%H-%M-%S).wav
 RECORD_FILE ?= rec_$(shell date +%Y-%m-%d_%H-%M-%S).wav
 RECORD_DURATION ?=
@@ -69,7 +70,8 @@ help-stt:
 	@echo ""
 	@echo "  Optional:"
 	@echo "    TOPIC=<topic>                GENERIC|TELCO|BANKING|INSURANCE (default: $(TOPIC))"
-	@echo "    ASR_VERSION=<ver>            V1|V2 (default: $(ASR_VERSION))"
+	@echo "    PROVIDER=<provider>          verbio|deepgram|capacity (gateway selects if unset)"
+	@echo "    ASR_VERSION=<ver>            [DEPRECATED] V1|V2 (use PROVIDER instead)"
 	@echo "    INLINE_GRAMMAR=<str>         Grammar inline as a string"
 	@echo "    GRAMMAR_URI=<uri>            Builtin grammar URI"
 	@echo "    COMPILED_GRAMMAR=<path>      Compiled grammar file (.tar.xz)"
@@ -147,8 +149,9 @@ stt: $(TOKEN_FILE) guard-LANGUAGE guard-AUDIO_FILE
 	@$(STT) --token $(TOKEN_FILE) --client-id $(CLIENT_ID) --client-secret $(CLIENT_SECRET) \
 		--host $(VERBIO_URL) \
 		--topic $(TOPIC) \
-		--asr-version $(ASR_VERSION) \
 		--language $(LANGUAGE) \
+		$(if $(ASR_VERSION),--asr-version $(ASR_VERSION)) \
+		$(if $(PROVIDER),--provider $(PROVIDER)) \
 		--audio-file $(AUDIO_FILE) \
 		$(if $(INLINE_GRAMMAR),--inline-grammar $(INLINE_GRAMMAR)) \
 		$(if $(GRAMMAR_URI),--grammar-uri $(GRAMMAR_URI)) \
