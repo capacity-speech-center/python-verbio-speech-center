@@ -70,7 +70,7 @@ help-stt:
 	@echo ""
 	@echo "  Optional:"
 	@echo "    TOPIC=<topic>                GENERIC|TELCO|BANKING|INSURANCE (default: $(TOPIC))"
-	@echo "    PROVIDER=<provider>          verbio|deepgram|capacity (gateway selects if unset)"
+	@echo "    PROVIDER=<provider>          verbio|deepgram|capacity"
 	@echo "    ASR_VERSION=<ver>            [DEPRECATED] V1|V2 (use PROVIDER instead)"
 	@echo "    INLINE_GRAMMAR=<str>         Grammar inline as a string"
 	@echo "    GRAMMAR_URI=<uri>            Builtin grammar URI"

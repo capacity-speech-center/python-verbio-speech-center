@@ -203,7 +203,7 @@ By default, incomplete partial results are shown as soon as they arrive. They co
 --provider arg
 ```
 
-This selects the speech recognition provider the speech center will use for transcriptions. Allowed values are `verbio`, `deepgram` and `capacity`. When unset, the gateway selects a provider implicitly based on the resource type.
+This selects the speech recognition provider the speech center will use for transcriptions. Allowed values are `verbio`, `deepgram` and `capacity`. 
 
 #### Speech-To-Text engine version (deprecated)
 
