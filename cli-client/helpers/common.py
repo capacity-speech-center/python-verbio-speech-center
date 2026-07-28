@@ -147,6 +147,7 @@ class RecognizerOptions:
         self.hide_partial_results = False
         self.inactivity_timeout = False
         self.asr_version = None
+        self.provider = None
         self.label = None
         self.word_boosting = []
         self.client_id = None
@@ -205,7 +206,11 @@ def parse_csr_commandline() -> RecognizerOptions:
                         required=False, default=False, action='store_true')
     parser.add_argument('--inactivity-timeout', '-i', help='Time for stream inactivity after the first valid response',
                         required=False, default=5.0)
-    parser.add_argument('--asr-version', choices=['V1', 'V2'], help='Selectable asr version', required=True)
+    parser.add_argument('--asr-version', choices=['V1', 'V2'],
+                        help='[DEPRECATED] Selectable asr version. Use --provider instead.', required=False, default=None)
+    parser.add_argument('--provider', choices=['verbio', 'deepgram', 'capacity'],
+                        help='Speech recognition provider to use. Replaces the deprecated --asr-version.',
+                        required=False, default=None)
     parser.add_argument('--label', help='Label for the request', required=False, default="")
     parser.add_argument('--word-boosting', '-w', help='Word to boost during recognition (can be specified multiple times)',
                         nargs='+', required=False, default=[], metavar='WORD')
@@ -233,6 +238,7 @@ def parse_csr_commandline() -> RecognizerOptions:
     options.hide_partial_results = args.hide_partial_results
     options.inactivity_timeout = float(args.inactivity_timeout)
     options.asr_version = args.asr_version
+    options.provider = args.provider
     options.label = args.label
     options.word_boosting = args.word_boosting
 
