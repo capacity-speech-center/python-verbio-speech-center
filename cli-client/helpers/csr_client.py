@@ -24,6 +24,7 @@ class CSRClient:
         self._resources = audio_resource
         self._host = options.host
         self._topic = options.topic
+        self._topic_name = options.topic_name
         self._grammar = options.grammar
         self._language = options.language
         self._peer_responded = threading.Event()
@@ -31,6 +32,7 @@ class CSRClient:
         self._secure_channel = options.secure_channel
         self._inactivity_timer = None
         self._inactivity_timer_timeout = options.inactivity_timeout
+        self._speech_complete_timeout = options.speech_complete_timeout
         self._asr_version = options.asr_version
         self._provider = options.provider
         self._formatting = options.formatting
@@ -70,7 +72,8 @@ class CSRClient:
                 f'\t"transcript": "{transcript}",\n' \
                 f'\t"confidence": {confidence},\n' \
                 f'\t"start_time": {response.result.start_time},\n' \
-                f'\t"duration": {response.result.duration}'
+                f'\t"duration": {response.result.duration},\n' \
+                f'\t"is_endpoint": {response.result.is_endpoint}'
             logging.info(transcript)
         elif not self._hide_partial_results:
             logging.info(f'Partial transcript: "{transcript}" -> start_time: {response.result.start_time}, duration: {response.result.duration}')
@@ -96,6 +99,7 @@ class CSRClient:
         metadata = None if self._secure_channel else [('authorization', "Bearer " + self._token)]
         self.__generate_messages(
                 topic=self._topic,
+                topic_name=self._topic_name,
                 grammar=self._grammar,
                 asr_version=self._asr_version,
                 provider=self._provider,
@@ -105,7 +109,8 @@ class CSRClient:
                 formatting=self._formatting,
                 diarization=self._diarization,
                 label=self._label,
-                word_boosting=self._word_boosting)
+                word_boosting=self._word_boosting,
+                speech_complete_timeout=self._speech_complete_timeout)
         response_iterator = self._stub.StreamingRecognize(self.__message_iterator(), metadata=metadata)
         self._consumer_future = self._executor.submit(self._response_watcher, response_iterator)
 
@@ -140,10 +145,12 @@ class CSRClient:
 
         raise Exception("Type of grammar not recognized.")
 
-    def __generate_recognition_resource(self, topic, grammar):
+    def __generate_recognition_resource(self, topic, topic_name, grammar):
         if grammar:
             grammar_resource = self.__generate_grammar_resource(grammar)
             return recognition_streaming_request_pb2.RecognitionResource(grammar=grammar_resource)
+        elif topic_name:
+            return recognition_streaming_request_pb2.RecognitionResource(topic_name=topic_name)
         else:
             return recognition_streaming_request_pb2.RecognitionResource(topic=topic)
 
@@ -152,15 +159,17 @@ class CSRClient:
                             asr_version: str = None,
                             provider: str = None,
                             topic: str = "",
+                            topic_name: str = "",
                             grammar: str = "",
                             language: str = "",
                             sample_rate: int = 16000,
                             diarization=False,
                             formatting=False,
                             label: str = "",
-                            word_boosting: list = None):
+                            word_boosting: list = None,
+                            speech_complete_timeout: int = None):
 
-        resource = self.__generate_recognition_resource(topic, grammar)
+        resource = self.__generate_recognition_resource(topic, topic_name, grammar)
         boosted_words = word_boosting or []
 
         config_kwargs = dict(
@@ -179,6 +188,14 @@ class CSRClient:
             config_kwargs["version"] = asr_versions[asr_version]
         if provider is not None:
             config_kwargs["provider"] = provider
+        if speech_complete_timeout is not None:
+            if grammar:
+                logging.warning("Ignoring the speech complete timeout: it is not supported on grammar recognition")
+            else:
+                logging.info("Requesting a speech complete timeout of %dms", speech_complete_timeout)
+                config_kwargs["configuration"] = recognition_streaming_request_pb2.TimerConfiguration(
+                    speech_complete_timeout=speech_complete_timeout
+                )
 
         recognition_config = recognition_streaming_request_pb2.RecognitionConfig(**config_kwargs)
 

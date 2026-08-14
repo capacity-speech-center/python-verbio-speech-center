@@ -20,6 +20,13 @@ class SynthesizerOptions:
         self.client_secret = None
 
 
+def positive_int(value):
+    parsed = int(value)
+    if parsed <= 0:
+        raise argparse.ArgumentTypeError(f"must be a positive number of milliseconds, got {parsed}")
+    return parsed
+
+
 def parse_credential_args(args, options):
     if args.client_id and not args.client_secret:
         raise argparse.ArgumentError(None, "If --client-id is specified, then --client-secret must also be specified.")
@@ -38,45 +45,7 @@ def check_commandline_values(args):
 def parse_tts_command_line() -> SynthesizerOptions:
     options = SynthesizerOptions()
     parser = argparse.ArgumentParser(description='Perform speech synthesis on a given text')
-    parser.add_argument(
-        '--voice',
-        '-v',
-        choices=[
-            'marvin_en_us',
-            'arthur_en_us',
-            'fiona_en_us',
-            'tricia_en_us',
-            'mark_en_us',
-            'cassidy_en_us',
-            'michael_en_us',
-            'hope_en_us',
-            'arabella_en_us',
-            'jessica_en_us',
-            'david_es_es',
-            'pablo_es_es',
-            'helena_es_es',
-            'miguel_es_pe',
-            'luz_es_pe',
-            'rosa_es_mx',
-            'pedro_pt_br',
-            'eduardo_pt_br',
-            'bel_pt_br',
-            'marcia_pt_br',
-            'anna_ca_es',
-            'emma_ca_es',
-            'xela_gl_es',
-            'marta_va_es',
-            'cristina_es_es',
-            'melisa_es_419',
-            'david_es_419',
-            'marcos_es_es',
-            'mariana_pt_br',
-            'caio_pt_br',
-            'gustavo_pt_br',
-            'juno_pt_br',
-        ],
-        help='Voice to use for the synthesis',
-        required=True)
+    parser.add_argument('--voice', '-v', type=str, help='Voice to use for the synthesis', required=True)
     parser.add_argument('--sample-rate', '-s', type=int, choices=[8000, 16000], help='Output audio sample rate in Hz', default=16000)
     parser.add_argument('--format', '-f', choices=['wav', 'raw'], help='Output audio format', default='wav')
     parser.add_argument('--audio-file', '-a', help='Path to store the resulting audio', required=True)
@@ -139,6 +108,7 @@ class RecognizerOptions:
         self.host = ""
         self.audio_file = None
         self.topic = None
+        self.topic_name = None
         self.grammar = None
         self.language = 'en-US'
         self.secure_channel = True
@@ -146,6 +116,7 @@ class RecognizerOptions:
         self.formatting = False
         self.hide_partial_results = False
         self.inactivity_timeout = False
+        self.speech_complete_timeout = None
         self.asr_version = None
         self.provider = None
         self.label = None
@@ -154,10 +125,11 @@ class RecognizerOptions:
         self.client_secret = None
 
     def check(self):
-        if self.topic is None and self.grammar is None:
-            raise Exception("You must provide a least a topic or a grammar")
-        if self.topic is not None and self.grammar is not None:
-            raise Exception("You must provide either a topic or a grammar only, not both")
+        resources = [self.topic, self.topic_name, self.grammar]
+        if all(resource is None for resource in resources):
+            raise Exception("You must provide a least a topic name or a grammar")
+        if sum(resource is not None for resource in resources) > 1:
+            raise Exception("You must provide either a topic name or a grammar only, not both")
 
 
 def parse_csr_commandline() -> RecognizerOptions:
@@ -168,8 +140,12 @@ def parse_csr_commandline() -> RecognizerOptions:
                                                       'Used for internal testing.',
                         required=False, default=False, dest='convert_audio', action='store_true')
     topic_group = parser.add_mutually_exclusive_group(required=True)
+    topic_group.add_argument('--topic-name', '-N', metavar='NAME',
+                             help='Topic to use for the recognition, as a free-form name '
+                                  '(generic, medical, finance, conversational_ai, beauty, telecommunications, '
+                                  'home_services)')
     topic_group.add_argument('--topic', '-T', choices=['GENERIC', 'TELCO', 'BANKING', 'INSURANCE'],
-                             help='A valid topic.')
+                             help='[DEPRECATED] A valid topic. Use --topic-name instead.')
     topic_group.add_argument('--inline-grammar', '-I', help='Grammar inline as a string.')
     topic_group.add_argument('--grammar-uri', '-G', help='Builtin grammar URI for the recognition.')
     topic_group.add_argument('--compiled-grammar', '-C', help='The compiled grammar file path (an .tar.xz) for the recognition.')
@@ -206,6 +182,10 @@ def parse_csr_commandline() -> RecognizerOptions:
                         required=False, default=False, action='store_true')
     parser.add_argument('--inactivity-timeout', '-i', help='Time for stream inactivity after the first valid response',
                         required=False, default=5.0)
+    parser.add_argument('--speech-complete-timeout', type=positive_int, metavar='MS',
+                        help='Milliseconds of silence after speech that end an utterance (from 1 to 5000). '
+                             'If not given, the recognizer default is used',
+                        required=False, default=None)
     parser.add_argument('--asr-version', choices=['V1', 'V2'],
                         help='[DEPRECATED] Selectable asr version. Use --provider instead.', required=False, default=None)
     parser.add_argument('--provider', choices=['verbio', 'deepgram', 'capacity'],
@@ -237,11 +217,14 @@ def parse_csr_commandline() -> RecognizerOptions:
     options.diarization = args.diarization
     options.hide_partial_results = args.hide_partial_results
     options.inactivity_timeout = float(args.inactivity_timeout)
+    options.speech_complete_timeout = args.speech_complete_timeout
     options.asr_version = args.asr_version
     options.provider = args.provider
     options.label = args.label
     options.word_boosting = args.word_boosting
 
+    if args.topic:
+        logging.warning("--topic is deprecated, use --topic-name instead")
     if args.inline_grammar:
         options.grammar = VerbioGrammar(VerbioGrammar.INLINE, args.inline_grammar)
     elif args.compiled_grammar:
@@ -250,6 +233,7 @@ def parse_csr_commandline() -> RecognizerOptions:
         options.grammar = VerbioGrammar(VerbioGrammar.URI, args.grammar_uri)
     else:  # No grammars
         options.topic = args.topic
+        options.topic_name = args.topic_name
 
     return options
 
