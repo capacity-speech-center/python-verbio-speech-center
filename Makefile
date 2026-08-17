@@ -20,7 +20,9 @@ LIST_VOICES = $(PYTHON) $(SOURCE_DIR)list_voices.py
 VERBIO_URL ?= us.speechcenter.verbio.com
 CLIENT_ID ?= $(shell cat $(VERBIO_CREDENTIALS) | jq .client_id -r)
 CLIENT_SECRET ?= $(shell cat $(VERBIO_CREDENTIALS) | jq .client_secret -r)
-TOPIC ?= GENERIC
+TOPIC ?=
+# Defaults to the generic topic, unless the recognition is driven by a grammar.
+TOPIC_NAME ?= $(if $(INLINE_GRAMMAR)$(GRAMMAR_URI)$(COMPILED_GRAMMAR)$(TOPIC),,generic)
 ASR_VERSION ?=
 PROVIDER ?=
 TTS_AUDIO_FILE ?= tts_$(shell date +%Y-%m-%d_%H-%M-%S).wav
@@ -69,7 +71,9 @@ help-stt:
 	@echo "    AUDIO_FILE=<path>            Path to .wav audio file (8kHz, PCM16)"
 	@echo ""
 	@echo "  Optional:"
-	@echo "    TOPIC=<topic>                GENERIC|TELCO|BANKING|INSURANCE (default: $(TOPIC))"
+	@echo "    TOPIC_NAME=<name>            generic|medical|finance|conversational_ai|beauty|"
+	@echo "                                 telecommunications|home_services (default: generic)"
+	@echo "    TOPIC=<topic>                [DEPRECATED] GENERIC|TELCO|BANKING|INSURANCE. Use TOPIC_NAME"
 	@echo "    PROVIDER=<provider>          verbio|deepgram|capacity"
 	@echo "    ASR_VERSION=<ver>            [DEPRECATED] V1|V2 (use PROVIDER instead)"
 	@echo "    INLINE_GRAMMAR=<str>         Grammar inline as a string"
@@ -79,6 +83,7 @@ help-stt:
 	@echo "    FORMATTING=1                 Enable formatting"
 	@echo "    HIDE_PARTIAL_RESULTS=1       Hide partial transcription results"
 	@echo "    INACTIVITY_TIMEOUT=<sec>     Stream inactivity timeout"
+	@echo "    SPEECH_COMPLETE_TIMEOUT=<ms> End-of-speech silence in ms (1 to 5000)"
 	@echo "    LABEL=<label>                Label for the request"
 	@echo "    WORD_BOOSTING='w1 w2 ...'    Words to boost during recognition"
 	@echo "    CONVERT_AUDIO=1              Convert A-LAW audio to PCM"
@@ -148,7 +153,8 @@ guard-%:
 stt: $(TOKEN_FILE) guard-LANGUAGE guard-AUDIO_FILE
 	@$(STT) --token $(TOKEN_FILE) --client-id $(CLIENT_ID) --client-secret $(CLIENT_SECRET) \
 		--host $(VERBIO_URL) \
-		--topic $(TOPIC) \
+		$(if $(TOPIC_NAME),--topic-name $(TOPIC_NAME)) \
+		$(if $(TOPIC),--topic $(TOPIC)) \
 		--language $(LANGUAGE) \
 		$(if $(ASR_VERSION),--asr-version $(ASR_VERSION)) \
 		$(if $(PROVIDER),--provider $(PROVIDER)) \
@@ -162,6 +168,7 @@ stt: $(TOKEN_FILE) guard-LANGUAGE guard-AUDIO_FILE
 		$(if $(FORMATTING),--formatting) \
 		$(if $(HIDE_PARTIAL_RESULTS),--hide-partial-results) \
 		$(if $(INACTIVITY_TIMEOUT),--inactivity-timeout $(INACTIVITY_TIMEOUT)) \
+		$(if $(SPEECH_COMPLETE_TIMEOUT),--speech-complete-timeout $(SPEECH_COMPLETE_TIMEOUT)) \
 		$(if $(LABEL),--label $(LABEL)) \
 		$(if $(WORD_BOOSTING),--word-boosting $(WORD_BOOSTING))
 

@@ -81,7 +81,7 @@ Speech recognition CLI will retrieve an audio file stored locally and send it th
 
 ```shell
 cd cli-client/
-python3 recognizer_stream.py --audio-file file.wav --topic GENERIC --language en-US --host us.speechcenter.verbio.com --token token.file --provider verbio --label project1
+python3 recognizer_stream.py --audio-file file.wav --topic-name generic --language en-US --host us.speechcenter.verbio.com --token token.file --provider verbio --label project1
 ```
 
 You can use the `--help`command for more options.
@@ -128,15 +128,21 @@ Argument:
 
 This argument is required, stating a path to a .wav audio in 8kHz or 16kHz sampling rate and PCM16 encoding to use for the recognition.
 
-#### Topic
+#### Topic name
+
+```
+-N, --topic-name arg
+```
+
+Topic to use for the recognition when a grammar is not provided, as a free-form name: `generic`, `medical`, `finance`, `conversational_ai`, `beauty`, `telecommunications` or `home_services`. Names are matched case-insensitively, and unknown names are rejected by the service.
+
+#### Topic (deprecated)
 
 ```
 -T, --topic arg
 ```
 
-Topic to use for the recognition when a grammar is not provided. Must be `GENERIC` | `BANKING` | `TELCO` | `INSURANCE` (default: `GENERIC`).
- 
-> **THIS FEATURE IS STILL IN DEVELOPMENT, PLEASE USE THE GENERIC TOPIC FOR ALL REQUESTS OR AN ERROR WILL BE GIVEN.**
+> **Deprecated:** the `topic` enum (`GENERIC` | `BANKING` | `TELCO` | `INSURANCE`) is superseded by `--topic-name`. It is still accepted for backwards compatibility but should no longer be used.
 
 #### Grammar
 
@@ -160,7 +166,7 @@ There are three options available to provide a grammar:
 -l, --language arg
 ```
 
-Language to use for the recognition: `en-US`, `en-GB`, `es-ES`, `es-419`, `ca-ES`, `va-ES`, `gl-ES`, `pt-BR`, `fr`, `fr-CA`, `de`, `it`, `tr`, `ja` (default: `en-US`). Please check the [Speech Center streaming Speech-To-Text documentation](https://doc.speechcenter.verbio.com/#tag/Speech-To-Text-Streaming/Available-languages-and-features) for an updated list of language codes.
+Language to use for the recognition. Please check the [Speech Center streaming Speech-To-Text documentation](https://doc.speechcenter.verbio.com/#tag/Speech-To-Text-Streaming/Available-languages-and-features) for an updated list of language codes.
 
 
 #### Word Boosting
@@ -196,6 +202,16 @@ This option will enable formatting on the speech transcription. Please check the
 ```
 
 By default, incomplete partial results are shown as soon as they arrive. They contain speech transcription segments which are subject to change. This option makes partial results not show anymore.
+
+#### Speech complete timeout
+
+```
+--speech-complete-timeout arg
+```
+
+Milliseconds of silence after speech that end an utterance and make the recognizer emit a final result. The value must be positive, and values above `5000` are rejected by the service. When the option is not given, the field is left unset and each recognizer applies its own default.
+
+Support depends on the selected provider: `deepgram` and `capacity` honor it, while the `verbio` engines expose no equivalent setting and ignore the value. The option does not apply to grammar recognition, which is served by `asr3`: it is dropped with a warning when combined with `--inline-grammar`, `--grammar-uri` or `--compiled-grammar`.
 
 #### Speech-To-Text provider
 
@@ -325,7 +341,7 @@ Instead of sending a single string of text to convert into speech, you can send 
 -v, --voice arg
 ```
 
-Voice to use for the text to speech generation. Please bear in mind that each voice has also the language code encoded in it. Some of the available voices are `marvin_en_us` (US English), `miguel_es_pe` (Peruvian Spanish), `bel_pt_br` (Brazilian Portuguese), `david_es_es` (Castillian Spanish) or `anna_ca_es` (Catalan). Please check the [Speech Center documentation](https://doc.speechcenter.verbio.com/#tag/Text-To-Speech-Common-Features/Available-voices) for an updated list of voices.
+Voice to use for the text to speech generation. Please bear in mind that each voice has also the language code encoded in it. Please check the [Speech Center documentation](https://doc.speechcenter.verbio.com/#tag/Text-To-Speech-Common-Features/Available-voices) for an updated list of voices.
 
 #### Sample rate
 
@@ -448,7 +464,7 @@ You must also specify a token file, where the token will be stored and updated i
 **Example**
 ```shell
 python3 recognizer_stream.py --client-id="your-client-id" --client-secret="your-client-secret"
- --audio-file file.wav --topic GENERIC --language en-US --host us.speechcenter.verbio.com --token token.file --provider verbio --label project1
+ --audio-file file.wav --topic-name generic --language en-US --host us.speechcenter.verbio.com --token token.file --provider verbio --label project1
 
 ```
 
