@@ -87,7 +87,8 @@ class CSRClient:
                     self._inactivity_timer.cancel()
                 self._start_inactivity_timer(self._inactivity_timer_timeout)
 
-            self._inactivity_timer.cancel()
+            if self._inactivity_timer:
+                self._inactivity_timer.cancel()
             self._peer_responded.set()
 
         except Exception as e:
