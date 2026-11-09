@@ -96,7 +96,7 @@ help-tts:
 	@echo "Target: tts — Text-to-speech synthesis"
 	@echo ""
 	@echo "  Required:"
-	@echo "    VOICE=<voice>                Voice for synthesis (e.g. david_es_es, marvin_en_us)"
+	@echo "    VOICE=<voice>                Voice for synthesis (e.g. helena_es_es, marvin_en_us)"
 	@echo "    TEXT=<text>                  Text to synthesize"
 	@echo "    or TEXT_FILE=<path>          File with newline-delimited text to synthesize"
 	@echo ""
@@ -108,7 +108,7 @@ help-tts:
 	@echo "    NOT_SECURE=1                 Disable secure channel"
 	@echo ""
 	@echo "  Example:"
-	@echo "    make tts VOICE=david_es_es TEXT='Hola mundo'"
+	@echo "    make tts VOICE=helena_es_es TEXT='Hola mundo'"
 
 help-list-voices:
 	@echo "Target: list-voices — List available TTS voices"
