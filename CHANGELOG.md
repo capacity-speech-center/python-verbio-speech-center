@@ -5,6 +5,10 @@ Notable changes to the Python Speech Center client. Add an entry under
 
 ## [Unreleased]
 
+### Added
+- Basque (`eu-ES`) as an accepted `--language` value of the streaming CLI client
+  (SC2-4200). It supports general-purpose recognition only, not grammars.
+
 ### Changed
 - TTS examples in the Makefile (`help-tts`) now use `helena_es_es` instead of the
   Verbio voice `david_es_es`. Speech Center is removing the Verbio TTS voices

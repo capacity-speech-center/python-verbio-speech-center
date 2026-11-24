@@ -163,6 +163,7 @@ def parse_csr_commandline() -> RecognizerOptions:
             'ca-ES',
             'va-ES',
             'gl-ES',
+            'eu-ES',
             'tr',
             'ja',
             'fr',
